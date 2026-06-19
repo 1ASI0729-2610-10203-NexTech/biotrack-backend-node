@@ -12,8 +12,8 @@ app.listen(PORT, () => {
 
 try {
   const options = {
-    key: fs.readFileSync('./biotrack.key'),
-    cert: fs.readFileSync('./biotrack.crt'),
+    key: fs.readFileSync('/etc/ssl/private/biotrack.key'),
+    cert: fs.readFileSync('/etc/ssl/certs/biotrack.crt'),
   }
   https.createServer(options, app).listen(HTTPS_PORT, () => {
     console.log(`BioTrack API running on HTTPS port ${HTTPS_PORT}`)
