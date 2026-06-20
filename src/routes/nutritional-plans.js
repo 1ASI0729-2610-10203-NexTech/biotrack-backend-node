@@ -103,7 +103,7 @@ router.get('/my-patients', async (req, res, next) => {
           nutritionalGoalLabel: GOAL_LABELS[row.nutritional_objective] ?? row.nutritional_objective ?? '-',
           isComplete,
           planStatus: row.status,
-          adherence: { percentage: adherencePct, consumed, target },
+          adherence: { percentage: adherencePct, consumed, target, label: adherencePct >= 80 ? 'Buena' : adherencePct >= 50 ? 'Regular' : 'Baja' },
           updatedAt: row.profile_updated ? new Date(row.profile_updated).toLocaleDateString('es-PE') : '-',
           plan: formatPlan(row),
           evaluations: [],
