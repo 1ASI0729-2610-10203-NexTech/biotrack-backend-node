@@ -14,7 +14,7 @@ const app = express()
 
 app.use(
   cors({
-    origin: ['https://biotrack-app-nextech.web.app', 'http://localhost:5173', 'http://localhost:3000'],
+    origin: ['https://biotrack-app-nextech.web.app', 'http://localhost:5173', 'http://localhost:3000', 'https://completion-firmware-bedford-strategies.trycloudflare.com'],
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
   }),
