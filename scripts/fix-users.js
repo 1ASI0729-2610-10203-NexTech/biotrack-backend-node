@@ -1,0 +1,7 @@
+require('dotenv').config()
+const { Pool } = require('pg')
+const pool = new Pool({ connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } })
+pool.query("UPDATE users SET email_verified=true, status='ACTIVE' WHERE email_verified=false OR status='PENDING'")
+  .then(r => console.log('Updated', r.rowCount, 'users'))
+  .catch(e => console.error(e.message))
+  .finally(() => pool.end())

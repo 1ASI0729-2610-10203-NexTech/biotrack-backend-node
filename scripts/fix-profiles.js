@@ -1,0 +1,7 @@
+require('dotenv').config()
+const { Pool } = require('pg')
+const pool = new Pool({ connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } })
+pool.query("UPDATE health_profiles SET dietary_restrictions = '' WHERE dietary_restrictions IS NULL")
+  .then(r => console.log('Fixed', r.rowCount, 'profiles'))
+  .catch(e => console.error(e.message))
+  .finally(() => pool.end())

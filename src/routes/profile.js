@@ -83,11 +83,48 @@ router.put('/health-data', async (req, res, next) => {
       [req.user.id, heightCm, weightKg, goalWeightKg ?? null, activityLevel, nutritionalObjective ?? null,
        age ?? null, biologicalSex ?? null, systolicPressure ?? null, diastolicPressure ?? null, glucoseMgDl ?? null],
     )
-    res.json(formatProfile(rows[0]))
+    const profile = rows[0]
+    // Auto-assign patient to first available nutritionist if no plan exists yet
+    const role = req.user.role
+    if (role === 'PACIENTE' || role === 'PATIENT') {
+      autoAssignNutritionist(req.user.id, profile).catch(() => {})
+    }
+    res.json(formatProfile(profile))
   } catch (err) {
     next(err)
   }
 })
+
+async function autoAssignNutritionist(patientId, profile) {
+  const existing = await pool.query(
+    'SELECT id FROM plan_assignments WHERE patient_id = $1 LIMIT 1', [patientId]
+  )
+  if (existing.rows.length) return
+
+  const { rows: nutritionists } = await pool.query(
+    "SELECT id FROM users WHERE role IN ('NUTRICIONISTA','NUTRITIONIST') LIMIT 1"
+  )
+  if (!nutritionists.length) return
+  const nutritionistId = nutritionists[0].id
+
+  const base = 2000
+  const actMult = { LOW: 1.0, MODERATE: 1.3, HIGH: 1.6 }
+  const objAdj = { LOSE_WEIGHT: -300, MAINTAIN_WEIGHT: 0, GAIN_MUSCLE: 300 }
+  const cal = Math.round(base * (actMult[profile.activity_level] ?? 1) + (objAdj[profile.nutritional_objective] ?? 0))
+  const protein = Math.round((cal * 0.30) / 4)
+  const carbs = Math.round((cal * 0.45) / 4)
+  const fat = Math.round((cal * 0.25) / 9)
+
+  const { rows: plans } = await pool.query(
+    `INSERT INTO nutritional_plans (name, calorie_target, protein_grams, carbs_grams, fat_grams, status, nutritionist_id, patient_id, created_at, updated_at)
+     VALUES ($1,$2,$3,$4,$5,'ACTIVATED',$6,$7,NOW(),NOW()) RETURNING id`,
+    [`Plan personalizado`, cal, protein, carbs, fat, nutritionistId, patientId]
+  )
+  await pool.query(
+    'INSERT INTO plan_assignments (plan_id, patient_id, nutritionist_id) VALUES ($1,$2,$3) ON CONFLICT DO NOTHING',
+    [plans[0].id, patientId, nutritionistId]
+  )
+}
 
 // GET /api/v1/profile/nutritional-goals
 router.get('/nutritional-goals', async (req, res, next) => {

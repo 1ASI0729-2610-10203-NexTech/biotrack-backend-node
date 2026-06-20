@@ -243,8 +243,8 @@ async function run() {
 
     // Health profile for Sofia
     await client.query(`
-      INSERT INTO health_profiles (user_id, height_cm, weight_kg, goal_weight_kg, activity_level, nutritional_objective, age, biological_sex)
-      VALUES ($1, 162, 58.5, 55.0, 'MODERATE', 'LOSE_WEIGHT', 24, 'FEMALE')
+      INSERT INTO health_profiles (user_id, height_cm, weight_kg, goal_weight_kg, activity_level, nutritional_objective, age, biological_sex, dietary_restrictions)
+      VALUES ($1, 162, 58.5, 55.0, 'MODERATE', 'LOSE_WEIGHT', 24, 'FEMALE', '')
       ON CONFLICT (user_id) DO NOTHING
     `, [patientId])
 
