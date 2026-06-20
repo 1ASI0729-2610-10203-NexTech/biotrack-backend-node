@@ -43,6 +43,48 @@ router.get('/charts', async (req, res, next) => {
   }
 })
 
+// GET /api/v1/progress/food-logs
+router.get('/food-logs', async (req, res, next) => {
+  try {
+    const { rows } = await pool.query(
+      'SELECT * FROM food_entries WHERE user_id = $1 ORDER BY logged_at DESC',
+      [req.user.id],
+    )
+    res.json(rows.map((r) => ({
+      id: r.id,
+      mealType: r.meal_type,
+      foodName: r.food_name,
+      description: r.food_name,
+      calories: Number(r.calories),
+      date: r.logged_at ? new Date(r.logged_at).toISOString().slice(0, 10) : null,
+      loggedAt: r.logged_at,
+    })))
+  } catch (err) {
+    next(err)
+  }
+})
+
+// GET /api/v1/progress/weight-records
+router.get('/weight-records', async (req, res, next) => {
+  try {
+    const { rows } = await pool.query(
+      'SELECT * FROM weight_records WHERE user_id = $1 ORDER BY recorded_at ASC',
+      [req.user.id],
+    )
+    res.json(rows.map((r) => ({
+      id: r.id,
+      weightKg: parseFloat(r.weight_kg),
+      date: r.recorded_at ? new Date(r.recorded_at).toISOString().slice(0, 10) : null,
+      type: r.type ?? 'PROGRESS',
+      source: r.source ?? 'MANUAL',
+      comment: r.notes ?? '',
+      recordedAt: r.recorded_at,
+    })))
+  } catch (err) {
+    next(err)
+  }
+})
+
 // POST /api/v1/progress/food-log
 router.post('/food-log', async (req, res, next) => {
   try {

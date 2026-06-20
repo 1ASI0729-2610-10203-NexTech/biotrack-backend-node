@@ -8,6 +8,7 @@ const nutritionalPlansRoutes = require('./src/routes/nutritional-plans')
 const progressRoutes = require('./src/routes/progress')
 const companiesRoutes = require('./src/routes/companies')
 const subscriptionsRoutes = require('./src/routes/subscriptions')
+const consultationsRoutes = require('./src/routes/consultations')
 
 const app = express()
 
@@ -30,6 +31,7 @@ app.use('/api/v1/nutritional-plans', nutritionalPlansRoutes)
 app.use('/api/v1/progress', progressRoutes)
 app.use('/api/v1/companies', companiesRoutes)
 app.use('/api/v1/subscriptions', subscriptionsRoutes)
+app.use('/api/v1/consultations', consultationsRoutes)
 
 app.use((err, req, res, _next) => {
   console.error(err)
