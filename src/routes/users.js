@@ -33,7 +33,7 @@ router.post('/register', async (req, res, next) => {
 
     await pool.query(
       `INSERT INTO users (first_name, last_name, email, password_hash, role, email_verified, status, verification_token)
-       VALUES ($1, $2, $3, $4, $5, false, 'PENDING', $6)`,
+       VALUES ($1, $2, $3, $4, $5, true, 'ACTIVE', $6)`,
       [firstName, lastName, normalizedEmail, passwordHash, role, verificationToken],
     )
 
