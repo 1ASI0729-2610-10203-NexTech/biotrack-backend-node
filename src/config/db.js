@@ -6,10 +6,12 @@ const pool = new Pool({
   database: process.env.DB_NAME || 'biotrack',
   user: process.env.DB_USER || 'biotrack_user',
   password: process.env.DB_PASSWORD,
+  connectionTimeoutMillis: 10000,
+  ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false,
 })
 
 pool.on('error', (err) => {
-  console.error('Unexpected error on idle client', err)
+  console.error('DB pool error:', err.message, err.code)
 })
 
 module.exports = pool

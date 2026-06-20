@@ -24,6 +24,16 @@ app.use(express.json())
 
 app.get('/health', (req, res) => res.json({ status: 'ok' }))
 
+app.get('/health/db', async (req, res) => {
+  const pool = require('./src/config/db')
+  try {
+    const result = await pool.query('SELECT NOW() AS now')
+    res.json({ status: 'ok', time: result.rows[0].now })
+  } catch (err) {
+    res.status(500).json({ status: 'error', message: err.message, code: err.code })
+  }
+})
+
 app.use('/api/v1/auth', authRoutes)
 app.use('/api/v1/users', usersRoutes)
 app.use('/api/v1/profile', profileRoutes)
