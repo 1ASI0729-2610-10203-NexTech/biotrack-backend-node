@@ -256,7 +256,23 @@ module.exports = {
         tags: ['Profile'],
         summary: 'Obtener metas nutricionales calculadas del paciente',
         responses: {
-          200: { description: 'Metas nutricionales (calorías, proteínas, carbohidratos, grasas)' },
+          200: {
+            description: 'Metas nutricionales calculadas según actividad y objetivo',
+            content: {
+              'application/json': {
+                example: {
+                  userId: 3,
+                  bmi: 23.5,
+                  goals: [
+                    { type: 'Calories', target: 2300, unit: 'kcal' },
+                    { type: 'Protein', target: 173, unit: 'g' },
+                    { type: 'Carbohydrates', target: 259, unit: 'g' },
+                    { type: 'Fat', target: 64, unit: 'g' },
+                  ],
+                },
+              },
+            },
+          },
           404: { description: 'Perfil no encontrado' },
         },
       },
@@ -309,7 +325,28 @@ module.exports = {
         tags: ['Nutritional Plans'],
         summary: 'Obtener planes nutricionales (paciente: su plan activo; nutricionista: sus planes)',
         responses: {
-          200: { description: 'Lista de planes nutricionales' },
+          200: {
+            description: 'Lista de planes nutricionales',
+            content: {
+              'application/json': {
+                example: [
+                  {
+                    id: 1,
+                    name: 'Plan de pérdida de peso',
+                    calorieTarget: 1800,
+                    proteinGrams: 135,
+                    carbsGrams: 203,
+                    fatGrams: 50,
+                    status: 'ACTIVATED',
+                    nutritionistId: 2,
+                    patientId: 5,
+                    createdAt: '2026-06-01T10:00:00.000Z',
+                    updatedAt: '2026-06-15T08:30:00.000Z',
+                  },
+                ],
+              },
+            },
+          },
         },
       },
       post: {
@@ -342,7 +379,44 @@ module.exports = {
         tags: ['Nutritional Plans'],
         summary: 'Listar pacientes asignados con su plan y progreso (solo NUTRICIONISTA)',
         responses: {
-          200: { description: 'Lista de pacientes con plan y adherencia' },
+          200: {
+            description: 'Lista de pacientes con plan y adherencia del día',
+            content: {
+              'application/json': {
+                example: {
+                  nutritionist: { id: 2 },
+                  patients: [
+                    {
+                      id: 5,
+                      name: 'Juan García',
+                      email: 'juan@example.com',
+                      age: 28,
+                      currentWeight: 82.5,
+                      weightKg: 82.5,
+                      goalWeightKg: 75.0,
+                      bmi: 26.2,
+                      nutritionalGoalLabel: 'Perder peso',
+                      isComplete: true,
+                      planStatus: 'ACTIVATED',
+                      adherence: { percentage: 85, consumed: 1530, target: 1800, label: 'Buena' },
+                      updatedAt: '21/06/2026',
+                      plan: {
+                        id: 1,
+                        name: 'Plan de pérdida de peso',
+                        calorieTarget: 1800,
+                        proteinGrams: 135,
+                        carbsGrams: 203,
+                        fatGrams: 50,
+                        status: 'ACTIVATED',
+                        nutritionistId: 2,
+                        patientId: 5,
+                      },
+                    },
+                  ],
+                },
+              },
+            },
+          },
           403: { description: 'Solo nutricionistas' },
         },
       },
@@ -353,7 +427,55 @@ module.exports = {
         summary: 'Obtener detalle completo de un paciente (solo NUTRICIONISTA)',
         parameters: [{ name: 'patientId', in: 'path', required: true, schema: { type: 'integer', example: 5 } }],
         responses: {
-          200: { description: 'Detalle del paciente con plan, historial de peso y logs de alimentación' },
+          200: {
+            description: 'Detalle del paciente con plan, historial de peso y logs de alimentación',
+            content: {
+              'application/json': {
+                example: {
+                  nutritionist: { id: 2 },
+                  patient: {
+                    id: 5,
+                    name: 'Juan García',
+                    email: 'juan@example.com',
+                    age: 28,
+                    heightCm: 175,
+                    currentWeight: 82.5,
+                    initialWeight: 85.0,
+                    weightChange: -2.5,
+                    remainingToGoal: -7.5,
+                    bmi: 26.9,
+                    bmiStatus: 'Sobrepeso',
+                    goalWeightKg: 75.0,
+                    nutritionalGoalLabel: 'Perder peso',
+                    isComplete: true,
+                    planStatus: 'ACTIVATED',
+                    dailyCalories: 1800,
+                    macros: { proteins: 30, carbohydrates: 45, fats: 25 },
+                    adherence: { percentage: 85, consumed: 1530, target: 1800, label: 'Buena' },
+                    foodLogs: [
+                      { id: 10, mealType: 'BREAKFAST', description: 'Avena con leche', calories: 380, date: '2026-06-21' },
+                      { id: 11, mealType: 'LUNCH', description: 'Pollo con arroz', calories: 650, date: '2026-06-21' },
+                    ],
+                    weightRecords: [
+                      { id: 3, weightKg: 85.0, date: '2026-06-01' },
+                      { id: 7, weightKg: 82.5, date: '2026-06-15' },
+                    ],
+                    plan: {
+                      id: 1,
+                      name: 'Plan de pérdida de peso',
+                      calorieTarget: 1800,
+                      proteinGrams: 135,
+                      carbsGrams: 203,
+                      fatGrams: 50,
+                      status: 'ACTIVATED',
+                      nutritionistId: 2,
+                      patientId: 5,
+                    },
+                  },
+                },
+              },
+            },
+          },
           404: { description: 'Paciente no encontrado para este nutricionista' },
         },
       },
@@ -384,7 +506,38 @@ module.exports = {
         summary: 'Obtener dieta semanal del plan (7 días con comidas)',
         parameters: [{ name: 'planId', in: 'path', required: true, schema: { type: 'integer', example: 1 } }],
         responses: {
-          200: { description: 'Dieta semanal con desayuno, almuerzo, cena y snack por día' },
+          200: {
+            description: 'Dieta semanal con desayuno, almuerzo, cena y snack por día',
+            content: {
+              'application/json': {
+                example: {
+                  planId: 1,
+                  planName: 'Plan de pérdida de peso',
+                  calorieTarget: 1800,
+                  days: [
+                    {
+                      day: 'Lunes',
+                      meals: [
+                        { type: 'Desayuno', description: 'Avena con frutas', calories: 450 },
+                        { type: 'Almuerzo', description: 'Pollo a la plancha con ensalada', calories: 630 },
+                        { type: 'Cena', description: 'Salmón con vegetales', calories: 540 },
+                        { type: 'Snack', description: 'Yogur griego', calories: 180 },
+                      ],
+                    },
+                    {
+                      day: 'Martes',
+                      meals: [
+                        { type: 'Desayuno', description: 'Huevos y tostada integral', calories: 450 },
+                        { type: 'Almuerzo', description: 'Wrap de pavo y aguacate', calories: 630 },
+                        { type: 'Cena', description: 'Pasta con salsa de tomate', calories: 540 },
+                        { type: 'Snack', description: 'Frutos secos', calories: 180 },
+                      ],
+                    },
+                  ],
+                },
+              },
+            },
+          },
           404: { description: 'Plan no encontrado' },
         },
       },
