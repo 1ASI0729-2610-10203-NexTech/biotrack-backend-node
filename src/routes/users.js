@@ -43,6 +43,53 @@ router.post('/register', async (req, res, next) => {
   }
 })
 
+// GET /api/v1/users/me
+router.get('/me', authenticate, async (req, res, next) => {
+  try {
+    const { rows } = await pool.query('SELECT * FROM users WHERE id = $1', [req.user.id])
+    if (!rows.length) return res.status(404).json({ message: 'User not found.' })
+    res.json(formatUser(rows[0]))
+  } catch (err) {
+    next(err)
+  }
+})
+
+// GET /api/v1/users/patients  — pacientes asignados al nutricionista autenticado
+router.get('/patients', authenticate, async (req, res, next) => {
+  try {
+    const role = req.user.role
+    if (role !== 'NUTRICIONISTA' && role !== 'NUTRITIONIST') {
+      return res.status(403).json({ message: 'Only nutritionists can access this endpoint.' })
+    }
+
+    const { rows } = await pool.query(
+      `SELECT DISTINCT u.id, u.first_name, u.last_name, u.email, u.role, u.status,
+              hp.weight_kg, hp.height_cm, hp.nutritional_objective, hp.activity_level
+       FROM plan_assignments pa
+       JOIN users u ON u.id = pa.patient_id
+       LEFT JOIN health_profiles hp ON hp.user_id = pa.patient_id
+       WHERE pa.nutritionist_id = $1
+       ORDER BY u.first_name ASC`,
+      [req.user.id],
+    )
+
+    res.json(rows.map((u) => ({
+      id: u.id,
+      firstName: u.first_name,
+      lastName: u.last_name,
+      email: u.email,
+      role: u.role,
+      status: u.status,
+      weightKg: u.weight_kg ? parseFloat(u.weight_kg) : null,
+      heightCm: u.height_cm ? parseFloat(u.height_cm) : null,
+      nutritionalObjective: u.nutritional_objective ?? null,
+      activityLevel: u.activity_level ?? null,
+    })))
+  } catch (err) {
+    next(err)
+  }
+})
+
 // GET /api/v1/users/:id
 router.get('/:id', authenticate, async (req, res, next) => {
   try {

@@ -96,7 +96,7 @@ module.exports = {
   ],
   paths: {
     // ── AUTH ──────────────────────────────────────────────────────────
-    '/api/v1/auth/register': {
+    '/api/v1/users/register': {
       post: {
         tags: ['Auth'],
         summary: 'Registrar nuevo usuario',
@@ -107,9 +107,10 @@ module.exports = {
             'application/json': {
               schema: {
                 type: 'object',
-                required: ['name', 'email', 'password', 'role'],
+                required: ['firstName', 'lastName', 'email', 'password', 'role'],
                 properties: {
-                  name: { type: 'string', example: 'Ana García' },
+                  firstName: { type: 'string', example: 'Ana' },
+                  lastName: { type: 'string', example: 'García' },
                   email: { type: 'string', example: 'ana@example.com' },
                   password: { type: 'string', example: 'Pass1234!' },
                   role: { type: 'string', enum: ['PACIENTE', 'NUTRICIONISTA', 'ADMIN_CORPORATIVO'] },
@@ -170,7 +171,7 @@ module.exports = {
         tags: ['Users'],
         summary: 'Obtener datos del usuario autenticado',
         responses: {
-          200: { description: 'Datos del usuario', content: { 'application/json': { schema: { $ref: '#/components/schemas/User' } } } },
+          200: { description: 'Datos del usuario autenticado', content: { 'application/json': { schema: { $ref: '#/components/schemas/User' } } } },
           401: { description: 'No autenticado' },
         },
       },
@@ -178,10 +179,31 @@ module.exports = {
     '/api/v1/users/patients': {
       get: {
         tags: ['Users'],
-        summary: 'Listar pacientes asignados (solo NUTRICIONISTA)',
+        summary: 'Listar pacientes asignados al nutricionista autenticado (solo NUTRICIONISTA)',
         responses: {
-          200: { description: 'Lista de pacientes' },
-          403: { description: 'Acceso denegado' },
+          200: {
+            description: 'Lista de pacientes con su perfil de salud básico',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'array',
+                  items: {
+                    type: 'object',
+                    properties: {
+                      id: { type: 'integer' },
+                      firstName: { type: 'string' },
+                      lastName: { type: 'string' },
+                      email: { type: 'string' },
+                      weightKg: { type: 'number' },
+                      heightCm: { type: 'number' },
+                      nutritionalObjective: { type: 'string' },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          403: { description: 'Solo nutricionistas pueden acceder a este endpoint' },
         },
       },
     },
