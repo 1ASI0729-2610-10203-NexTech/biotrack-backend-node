@@ -879,7 +879,20 @@ module.exports = {
       get: {
         tags: ['Subscriptions'],
         summary: 'Listar planes de suscripción disponibles',
-        responses: { 200: { description: 'Lista de planes (Basico, Profesional, Premium)' } },
+        responses: {
+          200: {
+            description: 'Lista de planes (Basico, Profesional, Premium)',
+            content: {
+              'application/json': {
+                example: [
+                  { id: 1, name: 'Basico', price: 0, billingCycle: 'MONTHLY', description: 'Acceso básico gratuito para explorar la plataforma.' },
+                  { id: 2, name: 'Profesional', price: 29.99, billingCycle: 'MONTHLY', description: 'Acceso completo con seguimiento nutricional personalizado.' },
+                  { id: 3, name: 'Premium', price: 49.99, billingCycle: 'MONTHLY', description: 'Todo Profesional más análisis avanzados y soporte prioritario.' },
+                ],
+              },
+            },
+          },
+        },
       },
     },
     '/api/v1/subscriptions/active': {
@@ -887,7 +900,33 @@ module.exports = {
         tags: ['Subscriptions'],
         summary: 'Ver suscripción activa del usuario autenticado',
         responses: {
-          200: { description: 'Suscripción activa con historial de pagos (null si no tiene)' },
+          200: {
+            description: 'Suscripción activa con historial de pagos (null si no tiene)',
+            content: {
+              'application/json': {
+                examples: {
+                  conSuscripcion: {
+                    summary: 'Usuario con suscripción activa',
+                    value: {
+                      id: 4,
+                      planId: 2,
+                      planName: 'Profesional',
+                      status: 'ACTIVE',
+                      startDate: '2026-06-01',
+                      nextBillingDate: '2026-07-01',
+                      payments: [
+                        { id: 7, subscription_id: 4, payment_date: '2026-06-01', amount: '29.99', status: 1, transaction_id: 'TXN-1748800000000', gateway_message: 'Pago procesado exitosamente' },
+                      ],
+                    },
+                  },
+                  sinSuscripcion: {
+                    summary: 'Usuario sin suscripción activa',
+                    value: null,
+                  },
+                },
+              },
+            },
+          },
         },
       },
     },
@@ -903,23 +942,35 @@ module.exports = {
                 type: 'object',
                 required: ['planId', 'startDate'],
                 properties: {
-                  planId: { type: 'integer', example: 1 },
+                  planId: { type: 'integer', example: 2 },
                   startDate: { type: 'string', format: 'date', example: '2026-06-21' },
                 },
               },
             },
           },
         },
-        responses: { 200: { description: 'Suscripción activada con pago y factura generados' } },
+        responses: {
+          200: {
+            description: 'Suscripción activada con pago y factura generados',
+            content: {
+              'application/json': {
+                example: { id: 4, userId: 3, planId: 2, planName: 'Profesional', status: 'ACTIVE', startDate: '2026-06-21', nextBillingDate: '2026-07-21' },
+              },
+            },
+          },
+        },
       },
     },
     '/api/v1/subscriptions/{subscriptionId}/suspend': {
       patch: {
         tags: ['Subscriptions'],
         summary: 'Suspender suscripción activa',
-        parameters: [{ name: 'subscriptionId', in: 'path', required: true, schema: { type: 'integer', example: 1 } }],
+        parameters: [{ name: 'subscriptionId', in: 'path', required: true, schema: { type: 'integer', example: 4 } }],
         responses: {
-          200: { description: 'Suscripción suspendida' },
+          200: {
+            description: 'Suscripción suspendida',
+            content: { 'application/json': { example: { id: 4, status: 'SUSPENDED' } } },
+          },
           404: { description: 'Suscripción no encontrada' },
         },
       },
@@ -928,9 +979,12 @@ module.exports = {
       patch: {
         tags: ['Subscriptions'],
         summary: 'Reactivar suscripción suspendida',
-        parameters: [{ name: 'subscriptionId', in: 'path', required: true, schema: { type: 'integer', example: 1 } }],
+        parameters: [{ name: 'subscriptionId', in: 'path', required: true, schema: { type: 'integer', example: 4 } }],
         responses: {
-          200: { description: 'Suscripción reactivada con nuevo pago y factura' },
+          200: {
+            description: 'Suscripción reactivada con nuevo pago y factura',
+            content: { 'application/json': { example: { id: 4, status: 'ACTIVE', nextBillingDate: '2026-07-21' } } },
+          },
           404: { description: 'Suscripción no encontrada' },
         },
       },
@@ -939,9 +993,12 @@ module.exports = {
       post: {
         tags: ['Subscriptions'],
         summary: 'Renovar suscripción (genera nuevo pago y extiende fecha de cobro)',
-        parameters: [{ name: 'subscriptionId', in: 'path', required: true, schema: { type: 'integer', example: 1 } }],
+        parameters: [{ name: 'subscriptionId', in: 'path', required: true, schema: { type: 'integer', example: 4 } }],
         responses: {
-          200: { description: 'Suscripción renovada' },
+          200: {
+            description: 'Suscripción renovada',
+            content: { 'application/json': { example: { id: 4, status: 'ACTIVE', nextBillingDate: '2026-08-21' } } },
+          },
           404: { description: 'Suscripción no encontrada' },
         },
       },
@@ -950,9 +1007,30 @@ module.exports = {
       get: {
         tags: ['Subscriptions'],
         summary: 'Resumen de facturación de la suscripción',
-        parameters: [{ name: 'subscriptionId', in: 'path', required: true, schema: { type: 'integer', example: 1 } }],
+        parameters: [{ name: 'subscriptionId', in: 'path', required: true, schema: { type: 'integer', example: 4 } }],
         responses: {
-          200: { description: 'Resumen con historial de pagos, facturas pendientes y saldo' },
+          200: {
+            description: 'Resumen con historial de pagos, facturas pendientes y saldo',
+            content: {
+              'application/json': {
+                example: {
+                  subscriptionId: 4,
+                  userId: 3,
+                  status: 'ACTIVE',
+                  planName: 'Profesional',
+                  billingCycle: 'MONTHLY',
+                  monthlyAmount: 29.99,
+                  startDate: '2026-06-01',
+                  nextBillingDate: '2026-07-01',
+                  paymentHistory: [
+                    { paymentId: 7, date: '2026-06-01', amount: 29.99, status: 'PAID', transactionId: 'TXN-1748800000000' },
+                  ],
+                  pendingInvoices: 0,
+                  outstandingBalance: 0,
+                },
+              },
+            },
+          },
           404: { description: 'Suscripción no encontrada' },
         },
       },
