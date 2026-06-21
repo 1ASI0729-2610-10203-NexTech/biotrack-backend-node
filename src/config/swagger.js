@@ -27,6 +27,21 @@ module.exports = {
           role: { type: 'string', enum: ['PACIENTE', 'NUTRICIONISTA', 'ADMIN_CORPORATIVO'] },
         },
       },
+      HealthProfile: {
+        type: 'object',
+        properties: {
+          id: { type: 'integer' },
+          userId: { type: 'integer' },
+          heightCm: { type: 'number', example: 175 },
+          weightKg: { type: 'number', example: 72 },
+          goalWeightKg: { type: 'number', example: 68 },
+          bmi: { type: 'number', example: 23.5 },
+          activityLevel: { type: 'string', enum: ['LOW', 'MODERATE', 'HIGH'] },
+          nutritionalObjective: { type: 'string', enum: ['LOSE_WEIGHT', 'MAINTAIN_WEIGHT', 'GAIN_MUSCLE'] },
+          age: { type: 'integer', example: 25 },
+          biologicalSex: { type: 'string', enum: ['M', 'F'] },
+        },
+      },
       Collaborator: {
         type: 'object',
         properties: {
@@ -35,7 +50,6 @@ module.exports = {
           email: { type: 'string' },
           documentNumber: { type: 'string' },
           status: { type: 'string', enum: ['ACTIVE', 'INACTIVE', 'PENDING'] },
-          sentAt: { type: 'string', format: 'date-time' },
         },
       },
       Company: {
@@ -55,8 +69,8 @@ module.exports = {
         properties: {
           companyId: { type: 'integer' },
           companyName: { type: 'string' },
-          sampleSize: { type: 'integer' },
-          threshold: { type: 'integer' },
+          totalCollaborators: { type: 'integer' },
+          activeCollaborators: { type: 'integer' },
           averages: {
             type: 'object',
             nullable: true,
@@ -65,8 +79,6 @@ module.exports = {
               bmi: { type: 'number' },
             },
           },
-          totalCollaborators: { type: 'integer' },
-          activeCollaborators: { type: 'integer' },
         },
       },
     },
@@ -77,7 +89,7 @@ module.exports = {
     { name: 'Users', description: 'Datos del usuario autenticado' },
     { name: 'Profile', description: 'Perfil de salud del paciente' },
     { name: 'Nutritional Plans', description: 'Planes nutricionales' },
-    { name: 'Progress', description: 'Seguimiento de progreso y peso' },
+    { name: 'Progress', description: 'Seguimiento de progreso, peso y alimentos' },
     { name: 'Consultations', description: 'Consultas con el nutricionista' },
     { name: 'Companies', description: 'Módulo corporativo — empresas y colaboradores' },
     { name: 'Subscriptions', description: 'Suscripciones y facturación' },
@@ -107,7 +119,7 @@ module.exports = {
           },
         },
         responses: {
-          201: { description: 'Usuario creado' },
+          201: { description: 'Usuario creado exitosamente' },
           409: { description: 'Email ya registrado' },
         },
       },
@@ -180,13 +192,78 @@ module.exports = {
         tags: ['Profile'],
         summary: 'Obtener perfil de salud del paciente',
         responses: {
-          200: { description: 'Perfil de salud' },
+          200: { description: 'Perfil de salud', content: { 'application/json': { schema: { $ref: '#/components/schemas/HealthProfile' } } } },
           404: { description: 'Perfil no encontrado' },
         },
       },
-      post: {
+    },
+    '/api/v1/profile/health-data': {
+      put: {
         tags: ['Profile'],
-        summary: 'Crear perfil de salud',
+        summary: 'Crear o actualizar datos de salud (upsert)',
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['heightCm', 'weightKg', 'activityLevel'],
+                properties: {
+                  heightCm: { type: 'number', example: 175 },
+                  weightKg: { type: 'number', example: 72 },
+                  goalWeightKg: { type: 'number', example: 68 },
+                  activityLevel: { type: 'string', enum: ['LOW', 'MODERATE', 'HIGH'], example: 'MODERATE' },
+                  nutritionalObjective: { type: 'string', enum: ['LOSE_WEIGHT', 'MAINTAIN_WEIGHT', 'GAIN_MUSCLE'] },
+                  age: { type: 'integer', example: 25 },
+                  biologicalSex: { type: 'string', enum: ['M', 'F'] },
+                  systolicPressure: { type: 'integer', example: 118 },
+                  diastolicPressure: { type: 'integer', example: 76 },
+                  glucoseMgDl: { type: 'number', example: 92 },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          200: { description: 'Perfil actualizado', content: { 'application/json': { schema: { $ref: '#/components/schemas/HealthProfile' } } } },
+        },
+      },
+    },
+    '/api/v1/profile/nutritional-goals': {
+      get: {
+        tags: ['Profile'],
+        summary: 'Obtener metas nutricionales calculadas del paciente',
+        responses: {
+          200: { description: 'Metas nutricionales (calorías, proteínas, carbohidratos, grasas)' },
+          404: { description: 'Perfil no encontrado' },
+        },
+      },
+    },
+    '/api/v1/profile/nutritional-goal': {
+      put: {
+        tags: ['Profile'],
+        summary: 'Actualizar objetivo nutricional del paciente',
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['nutritionalObjective'],
+                properties: {
+                  nutritionalObjective: { type: 'string', enum: ['LOSE_WEIGHT', 'MAINTAIN_WEIGHT', 'GAIN_MUSCLE'] },
+                },
+              },
+            },
+          },
+        },
+        responses: { 200: { description: 'Objetivo actualizado' } },
+      },
+    },
+    '/api/v1/profile/restrictions': {
+      put: {
+        tags: ['Profile'],
+        summary: 'Actualizar restricciones alimentarias del paciente',
         requestBody: {
           required: true,
           content: {
@@ -194,25 +271,13 @@ module.exports = {
               schema: {
                 type: 'object',
                 properties: {
-                  weight: { type: 'number', example: 72 },
-                  height: { type: 'number', example: 175 },
-                  age: { type: 'integer', example: 22 },
-                  biologicalSex: { type: 'string', enum: ['M', 'F'] },
-                  activityLevel: { type: 'string', example: 'MODERATE' },
-                  glucoseLevel: { type: 'number', example: 92 },
-                  systolicPressure: { type: 'integer', example: 118 },
-                  diastolicPressure: { type: 'integer', example: 76 },
+                  restrictions: { type: 'array', items: { type: 'string' }, example: ['Sin gluten', 'Sin lácteos'] },
                 },
               },
             },
           },
         },
-        responses: { 201: { description: 'Perfil creado' } },
-      },
-      put: {
-        tags: ['Profile'],
-        summary: 'Actualizar perfil de salud',
-        responses: { 200: { description: 'Perfil actualizado' } },
+        responses: { 200: { description: 'Restricciones actualizadas' } },
       },
     },
 
@@ -220,26 +285,105 @@ module.exports = {
     '/api/v1/nutritional-plans': {
       get: {
         tags: ['Nutritional Plans'],
-        summary: 'Obtener plan nutricional del paciente',
+        summary: 'Obtener planes nutricionales (paciente: su plan activo; nutricionista: sus planes)',
         responses: {
-          200: { description: 'Plan nutricional activo' },
-          204: { description: 'Sin plan asignado' },
+          200: { description: 'Lista de planes nutricionales' },
         },
       },
       post: {
         tags: ['Nutritional Plans'],
         summary: 'Crear plan nutricional (solo NUTRICIONISTA)',
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['name', 'calorieTarget'],
+                properties: {
+                  name: { type: 'string', example: 'Plan Semana 1' },
+                  calorieTarget: { type: 'integer', example: 1950 },
+                  proteinGrams: { type: 'integer', example: 140 },
+                  carbsGrams: { type: 'integer', example: 220 },
+                  fatGrams: { type: 'integer', example: 65 },
+                  patientId: { type: 'integer', example: 5 },
+                },
+              },
+            },
+          },
+        },
         responses: { 201: { description: 'Plan creado' } },
+      },
+    },
+    '/api/v1/nutritional-plans/my-patients': {
+      get: {
+        tags: ['Nutritional Plans'],
+        summary: 'Listar pacientes asignados con su plan y progreso (solo NUTRICIONISTA)',
+        responses: {
+          200: { description: 'Lista de pacientes con plan y adherencia' },
+          403: { description: 'Solo nutricionistas' },
+        },
+      },
+    },
+    '/api/v1/nutritional-plans/patients/{patientId}': {
+      get: {
+        tags: ['Nutritional Plans'],
+        summary: 'Obtener detalle completo de un paciente (solo NUTRICIONISTA)',
+        parameters: [{ name: 'patientId', in: 'path', required: true, schema: { type: 'integer', example: 5 } }],
+        responses: {
+          200: { description: 'Detalle del paciente con plan, historial de peso y logs de alimentación' },
+          404: { description: 'Paciente no encontrado para este nutricionista' },
+        },
+      },
+    },
+    '/api/v1/nutritional-plans/{planId}/status': {
+      patch: {
+        tags: ['Nutritional Plans'],
+        summary: 'Actualizar estado del plan (ACTIVATED / REJECTED)',
+        parameters: [{ name: 'planId', in: 'path', required: true, schema: { type: 'integer', example: 1 } }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['status'],
+                properties: { status: { type: 'string', enum: ['ACTIVATED', 'REJECTED'] } },
+              },
+            },
+          },
+        },
+        responses: { 200: { description: 'Estado actualizado' } },
+      },
+    },
+    '/api/v1/nutritional-plans/{planId}/weekly-diet': {
+      get: {
+        tags: ['Nutritional Plans'],
+        summary: 'Obtener dieta semanal del plan (7 días con comidas)',
+        parameters: [{ name: 'planId', in: 'path', required: true, schema: { type: 'integer', example: 1 } }],
+        responses: {
+          200: { description: 'Dieta semanal con desayuno, almuerzo, cena y snack por día' },
+          404: { description: 'Plan no encontrado' },
+        },
       },
     },
 
     // ── PROGRESS ──────────────────────────────────────────────────────
-    '/api/v1/progress': {
+    '/api/v1/progress/charts': {
       get: {
         tags: ['Progress'],
-        summary: 'Historial de registros de peso',
-        responses: { 200: { description: 'Lista de registros' } },
+        summary: 'Obtener gráficos de progreso (peso, calorías quemadas, ingesta calórica)',
+        responses: { 200: { description: 'Datos de gráficos de progreso' } },
       },
+    },
+    '/api/v1/progress/weight-records': {
+      get: {
+        tags: ['Progress'],
+        summary: 'Historial de registros de peso del paciente',
+        responses: { 200: { description: 'Lista de registros de peso ordenados por fecha' } },
+      },
+    },
+    '/api/v1/progress/weight-update': {
       post: {
         tags: ['Progress'],
         summary: 'Registrar peso del día',
@@ -249,15 +393,75 @@ module.exports = {
             'application/json': {
               schema: {
                 type: 'object',
+                required: ['weightKg'],
                 properties: {
-                  weight: { type: 'number', example: 72 },
-                  date: { type: 'string', format: 'date', example: '2026-06-21' },
+                  weightKg: { type: 'number', example: 71.5 },
+                  notes: { type: 'string', example: 'Después del entrenamiento' },
                 },
               },
             },
           },
         },
-        responses: { 201: { description: 'Registro guardado' } },
+        responses: { 201: { description: 'Registro de peso guardado' } },
+      },
+    },
+    '/api/v1/progress/food-logs': {
+      get: {
+        tags: ['Progress'],
+        summary: 'Historial de registro de alimentos del paciente',
+        responses: { 200: { description: 'Lista de alimentos registrados ordenados por fecha' } },
+      },
+    },
+    '/api/v1/progress/food-log': {
+      post: {
+        tags: ['Progress'],
+        summary: 'Registrar consumo de alimento',
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['mealType', 'foodName', 'calories'],
+                properties: {
+                  mealType: { type: 'string', enum: ['BREAKFAST', 'LUNCH', 'DINNER', 'SNACK'], example: 'BREAKFAST' },
+                  foodName: { type: 'string', example: 'Avena con leche' },
+                  calories: { type: 'number', example: 380 },
+                },
+              },
+            },
+          },
+        },
+        responses: { 201: { description: 'Consumo de alimento registrado' } },
+      },
+    },
+    '/api/v1/progress/activity-history': {
+      get: {
+        tags: ['Progress'],
+        summary: 'Historial de actividad física del paciente',
+        responses: { 200: { description: 'Lista de actividades registradas ordenadas por fecha' } },
+      },
+    },
+    '/api/v1/progress/activity-log': {
+      post: {
+        tags: ['Progress'],
+        summary: 'Registrar actividad física',
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['activityType', 'durationMinutes'],
+                properties: {
+                  activityType: { type: 'string', example: 'Caminata' },
+                  durationMinutes: { type: 'integer', example: 30 },
+                },
+              },
+            },
+          },
+        },
+        responses: { 201: { description: 'Actividad física registrada' } },
       },
     },
 
@@ -265,13 +469,33 @@ module.exports = {
     '/api/v1/consultations': {
       get: {
         tags: ['Consultations'],
-        summary: 'Listar consultas del usuario autenticado',
+        summary: 'Listar consultas (paciente: las suyas; nutricionista: las de sus pacientes)',
         responses: { 200: { description: 'Lista de consultas' } },
       },
       post: {
         tags: ['Consultations'],
         summary: 'Crear nueva consulta (solo NUTRICIONISTA)',
-        responses: { 201: { description: 'Consulta creada' } },
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['patientId', 'date'],
+                properties: {
+                  patientId: { type: 'integer', example: 5 },
+                  date: { type: 'string', format: 'date', example: '2026-06-21' },
+                  topic: { type: 'string', example: 'Revisión de plan nutricional' },
+                  notes: { type: 'string', example: 'Paciente con buena adherencia' },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          201: { description: 'Consulta creada' },
+          403: { description: 'Solo nutricionistas pueden crear consultas' },
+        },
       },
     },
 
@@ -324,14 +548,13 @@ module.exports = {
             description: 'Lista de colaboradores',
             content: { 'application/json': { schema: { type: 'array', items: { $ref: '#/components/schemas/Collaborator' } } } },
           },
-          403: { description: 'Sin acceso a esta empresa' },
         },
       },
     },
     '/api/v1/companies/{companyId}/collaborators/upload': {
       post: {
         tags: ['Companies'],
-        summary: 'Carga masiva de colaboradores',
+        summary: 'Carga masiva de colaboradores vía JSON (CSV parseado en frontend)',
         parameters: [{ name: 'companyId', in: 'path', required: true, schema: { type: 'integer', example: 1 } }],
         requestBody: {
           required: true,
@@ -366,30 +589,96 @@ module.exports = {
     '/api/v1/companies/{companyId}/metrics': {
       get: {
         tags: ['Companies'],
-        summary: 'Métricas grupales anonimizadas',
+        summary: 'Métricas grupales anonimizadas de bienestar corporativo',
         parameters: [{ name: 'companyId', in: 'path', required: true, schema: { type: 'integer', example: 1 } }],
         responses: {
           200: { description: 'Métricas del grupo', content: { 'application/json': { schema: { $ref: '#/components/schemas/Metrics' } } } },
-          403: { description: 'Sin acceso a esta empresa' },
           404: { description: 'Empresa no encontrada' },
         },
       },
     },
 
     // ── SUBSCRIPTIONS ─────────────────────────────────────────────────
-    '/api/v1/subscriptions': {
+    '/api/v1/subscriptions/plans': {
       get: {
         tags: ['Subscriptions'],
-        summary: 'Ver suscripción activa',
+        summary: 'Listar planes de suscripción disponibles',
+        responses: { 200: { description: 'Lista de planes (Basico, Profesional, Premium)' } },
+      },
+    },
+    '/api/v1/subscriptions/active': {
+      get: {
+        tags: ['Subscriptions'],
+        summary: 'Ver suscripción activa del usuario autenticado',
         responses: {
-          200: { description: 'Suscripción activa' },
-          204: { description: 'Sin suscripción' },
+          200: { description: 'Suscripción activa con historial de pagos (null si no tiene)' },
         },
       },
+    },
+    '/api/v1/subscriptions/activate': {
       post: {
         tags: ['Subscriptions'],
-        summary: 'Crear suscripción',
-        responses: { 201: { description: 'Suscripción creada' } },
+        summary: 'Activar una suscripción',
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['planId', 'startDate'],
+                properties: {
+                  planId: { type: 'integer', example: 1 },
+                  startDate: { type: 'string', format: 'date', example: '2026-06-21' },
+                },
+              },
+            },
+          },
+        },
+        responses: { 200: { description: 'Suscripción activada con pago y factura generados' } },
+      },
+    },
+    '/api/v1/subscriptions/{subscriptionId}/suspend': {
+      patch: {
+        tags: ['Subscriptions'],
+        summary: 'Suspender suscripción activa',
+        parameters: [{ name: 'subscriptionId', in: 'path', required: true, schema: { type: 'integer', example: 1 } }],
+        responses: {
+          200: { description: 'Suscripción suspendida' },
+          404: { description: 'Suscripción no encontrada' },
+        },
+      },
+    },
+    '/api/v1/subscriptions/{subscriptionId}/reactivate': {
+      patch: {
+        tags: ['Subscriptions'],
+        summary: 'Reactivar suscripción suspendida',
+        parameters: [{ name: 'subscriptionId', in: 'path', required: true, schema: { type: 'integer', example: 1 } }],
+        responses: {
+          200: { description: 'Suscripción reactivada con nuevo pago y factura' },
+          404: { description: 'Suscripción no encontrada' },
+        },
+      },
+    },
+    '/api/v1/subscriptions/{subscriptionId}/renewal': {
+      post: {
+        tags: ['Subscriptions'],
+        summary: 'Renovar suscripción (genera nuevo pago y extiende fecha de cobro)',
+        parameters: [{ name: 'subscriptionId', in: 'path', required: true, schema: { type: 'integer', example: 1 } }],
+        responses: {
+          200: { description: 'Suscripción renovada' },
+          404: { description: 'Suscripción no encontrada' },
+        },
+      },
+    },
+    '/api/v1/subscriptions/{subscriptionId}/billing-summary': {
+      get: {
+        tags: ['Subscriptions'],
+        summary: 'Resumen de facturación de la suscripción',
+        parameters: [{ name: 'subscriptionId', in: 'path', required: true, schema: { type: 'integer', example: 1 } }],
+        responses: {
+          200: { description: 'Resumen con historial de pagos, facturas pendientes y saldo' },
+          404: { description: 'Suscripción no encontrada' },
+        },
       },
     },
   },
