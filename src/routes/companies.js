@@ -4,6 +4,41 @@ const authenticate = require('../middleware/auth')
 
 router.use(authenticate)
 
+// GET /api/v1/companies/corporate-client  (para el nutricionista: ver su empresa asignada)
+// IMPORTANTE: debe ir antes de las rutas con /:companyId para no ser capturada por ellas
+router.get('/corporate-client', async (req, res, next) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT
+         c.id, c.name, c.ruc, c.sector, c.country, c.city, c.status,
+         COUNT(col.id) FILTER (WHERE col.status = 'ACTIVE') AS active_collaborators,
+         COUNT(col.id) AS total_collaborators
+       FROM companies c
+       LEFT JOIN collaborators col ON col.company_id = c.id
+       WHERE c.nutritionist_id = $1
+       GROUP BY c.id`,
+      [req.user.id],
+    )
+
+    if (!rows.length) return res.status(204).send()
+
+    const c = rows[0]
+    res.json({
+      id: c.id,
+      name: c.name,
+      ruc: c.ruc,
+      sector: c.sector,
+      country: c.country,
+      city: c.city,
+      status: c.status,
+      activeCollaborators: Number(c.active_collaborators),
+      totalCollaborators: Number(c.total_collaborators),
+    })
+  } catch (err) {
+    next(err)
+  }
+})
+
 // POST /api/v1/companies
 router.post('/', async (req, res, next) => {
   try {
