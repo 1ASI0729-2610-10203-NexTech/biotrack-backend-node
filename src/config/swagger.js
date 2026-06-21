@@ -548,14 +548,62 @@ module.exports = {
       get: {
         tags: ['Progress'],
         summary: 'Obtener gráficos de progreso (peso, calorías quemadas, ingesta calórica)',
-        responses: { 200: { description: 'Datos de gráficos de progreso' } },
+        responses: {
+          200: {
+            description: 'Datos de los tres gráficos de progreso del paciente',
+            content: {
+              'application/json': {
+                example: {
+                  charts: [
+                    {
+                      name: 'Weight Progress',
+                      data: [
+                        { value: 85.0, date: '2026-06-01T08:00:00.000Z' },
+                        { value: 83.5, date: '2026-06-08T08:00:00.000Z' },
+                        { value: 82.0, date: '2026-06-15T08:00:00.000Z' },
+                      ],
+                    },
+                    {
+                      name: 'Activity Calories Burned',
+                      data: [
+                        { value: 210, date: '2026-06-05T17:00:00.000Z' },
+                        { value: 350, date: '2026-06-10T17:00:00.000Z' },
+                      ],
+                    },
+                    {
+                      name: 'Daily Calorie Intake',
+                      data: [
+                        { value: 1750, date: '2026-06-19' },
+                        { value: 1820, date: '2026-06-20' },
+                        { value: 1530, date: '2026-06-21' },
+                      ],
+                    },
+                  ],
+                },
+              },
+            },
+          },
+        },
       },
     },
     '/api/v1/progress/weight-records': {
       get: {
         tags: ['Progress'],
         summary: 'Historial de registros de peso del paciente',
-        responses: { 200: { description: 'Lista de registros de peso ordenados por fecha' } },
+        responses: {
+          200: {
+            description: 'Lista de registros de peso ordenados por fecha',
+            content: {
+              'application/json': {
+                example: [
+                  { id: 1, weightKg: 85.0, date: '2026-06-01', type: 'PROGRESS', source: 'MANUAL', comment: '', recordedAt: '2026-06-01T08:00:00.000Z' },
+                  { id: 2, weightKg: 83.5, date: '2026-06-08', type: 'PROGRESS', source: 'MANUAL', comment: 'Después de la dieta', recordedAt: '2026-06-08T07:30:00.000Z' },
+                  { id: 3, weightKg: 82.0, date: '2026-06-15', type: 'PROGRESS', source: 'MANUAL', comment: '', recordedAt: '2026-06-15T08:00:00.000Z' },
+                ],
+              },
+            },
+          },
+        },
       },
     },
     '/api/v1/progress/weight-update': {
@@ -584,7 +632,20 @@ module.exports = {
       get: {
         tags: ['Progress'],
         summary: 'Historial de registro de alimentos del paciente',
-        responses: { 200: { description: 'Lista de alimentos registrados ordenados por fecha' } },
+        responses: {
+          200: {
+            description: 'Lista de alimentos registrados ordenados por fecha',
+            content: {
+              'application/json': {
+                example: [
+                  { id: 10, mealType: 'BREAKFAST', foodName: 'Avena con leche', description: 'Avena con leche', calories: 380, date: '2026-06-21', loggedAt: '2026-06-21T08:15:00.000Z' },
+                  { id: 11, mealType: 'LUNCH', foodName: 'Pollo a la plancha con ensalada', description: 'Pollo a la plancha con ensalada', calories: 620, date: '2026-06-21', loggedAt: '2026-06-21T13:00:00.000Z' },
+                  { id: 12, mealType: 'SNACK', foodName: 'Yogur griego', description: 'Yogur griego', calories: 150, date: '2026-06-21', loggedAt: '2026-06-21T16:30:00.000Z' },
+                ],
+              },
+            },
+          },
+        },
       },
     },
     '/api/v1/progress/food-log': {
@@ -614,7 +675,19 @@ module.exports = {
       get: {
         tags: ['Progress'],
         summary: 'Historial de actividad física del paciente',
-        responses: { 200: { description: 'Lista de actividades registradas ordenadas por fecha' } },
+        responses: {
+          200: {
+            description: 'Lista de actividades registradas ordenadas por fecha',
+            content: {
+              'application/json': {
+                example: [
+                  { id: 5, activityType: 'Caminata', durationMinutes: 30, caloriesBurned: 210, loggedAt: '2026-06-20T18:00:00.000Z' },
+                  { id: 6, activityType: 'Ciclismo', durationMinutes: 45, caloriesBurned: 315, loggedAt: '2026-06-19T07:30:00.000Z' },
+                ],
+              },
+            },
+          },
+        },
       },
     },
     '/api/v1/progress/activity-log': {
@@ -645,7 +718,35 @@ module.exports = {
       get: {
         tags: ['Consultations'],
         summary: 'Listar consultas (paciente: las suyas; nutricionista: las de sus pacientes)',
-        responses: { 200: { description: 'Lista de consultas' } },
+        responses: {
+          200: {
+            description: 'Lista de consultas según rol del usuario autenticado',
+            content: {
+              'application/json': {
+                examples: {
+                  nutricionista: {
+                    summary: 'Respuesta para rol NUTRICIONISTA',
+                    value: {
+                      role: 'nutritionist',
+                      consultations: [
+                        { id: 3, patientId: 5, patientName: 'Juan García', patientEmail: 'juan@example.com', date: '2026-06-18', topic: 'Revisión de plan nutricional', notes: 'Buena adherencia, reducir carbohidratos', createdAt: '2026-06-18T10:00:00.000Z' },
+                      ],
+                    },
+                  },
+                  paciente: {
+                    summary: 'Respuesta para rol PACIENTE',
+                    value: {
+                      role: 'patient',
+                      consultations: [
+                        { id: 3, nutritionistName: 'Carla Mendoza', date: '2026-06-18', topic: 'Revisión de plan nutricional', notes: 'Buena adherencia, reducir carbohidratos', createdAt: '2026-06-18T10:00:00.000Z' },
+                      ],
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
       },
       post: {
         tags: ['Consultations'],
