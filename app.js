@@ -22,6 +22,27 @@ app.use(
 
 app.use(express.json())
 
+app.get('/', (req, res) =>
+  res.json({
+    name: 'BioTrack API',
+    version: '1.0.0',
+    team: 'NexTech — UPC 2026',
+    status: 'running',
+    health: '/health',
+    db: '/health/db',
+    endpoints: {
+      auth: '/api/v1/auth',
+      users: '/api/v1/users',
+      profile: '/api/v1/profile',
+      nutritionalPlans: '/api/v1/nutritional-plans',
+      progress: '/api/v1/progress',
+      companies: '/api/v1/companies',
+      subscriptions: '/api/v1/subscriptions',
+      consultations: '/api/v1/consultations',
+    },
+  }),
+)
+
 app.get('/health', (req, res) => res.json({ status: 'ok' }))
 
 app.get('/health/db', async (req, res) => {
